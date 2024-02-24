@@ -11,18 +11,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String? _selectedValue;
+  late String _selectedValueFrom;
+  late String _selectedValueTo;
   late TextEditingController _controller;
-  String jsonString = '';
-  Map<String, dynamic> requestData = {};
-  String translatedText = '';
+  late String jsonString;
+  late Map<String, dynamic> requestData;
+
+  late String translatedText = '';
+
   List<List<String>> languages = [
+    ['Русский', 'ru'],
     ['English', 'en'],
     ['Deutsch', 'de'],
     ['Spanish', 'es'],
     ['Italian', 'it'],
     ['Slovenian', 'sl'],
     ['Filipino', 'tl'],
+    ['Kazach', 'kk'],
+    ['Turkish', 'tr']
   ];
 
   Future<void> translateAndHandleResponse() async {
@@ -30,16 +36,16 @@ class _HomePageState extends State<HomePage> {
     jsonString = await rootBundle.loadString('lib/assets/body.json');
     requestData = json.decode(jsonString);
     requestData['texts'] = _controller.text;
-    requestData['targetLanguageCode'] = _selectedValue;
+    requestData['targetLanguageCode'] = _selectedValueTo;
+    requestData['sourceLanguageCode'] = _selectedValueFrom;
 
     try {
       final jsonResponse = await translationsDio.translateData(requestData);
 
       print('JSON Response: $jsonResponse');
-      String decodedText =
-          utf8.decode(jsonResponse['translations'][0]['text'].codeUnits);
+
       setState(() {
-        translatedText = decodedText;
+        translatedText = jsonResponse['translations'][0]['text'];
       });
     } catch (e) {
       print(e);
@@ -64,33 +70,62 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.red[100],
         title: const Text('Translator'),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(15.0),
         child: Column(
           children: [
-            DropdownButton<String>(
-                hint: const Text(
-                  "Choose Language ",
-                  style: TextStyle(fontSize: 16.0),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButton<String>(
+                      hint: const Text(
+                        "Language From ",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      icon: const Icon(
+                        Icons.translate,
+                        color: Colors.pink,
+                        size: 26.0,
+                      ),
+                      items: languages.map((List<String> lang) {
+                        return DropdownMenuItem<String>(
+                          value: lang[1],
+                          child: Text(lang[0]),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedValueFrom = newValue!;
+                        });
+                      }),
                 ),
-                icon: const Icon(
-                  Icons.translate,
-                  color: Colors.pink,
-                  size: 26.0,
+                Expanded(
+                  child: DropdownButton<String>(
+                      hint: const Text(
+                        "Language To ",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      icon: const Icon(
+                        Icons.translate,
+                        color: Colors.pink,
+                        size: 26.0,
+                      ),
+                      items: languages.map((List<String> lang) {
+                        return DropdownMenuItem<String>(
+                          value: lang[1],
+                          child: Text(lang[0]),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedValueTo = newValue!;
+                        });
+                      }),
                 ),
-                //value: _selectedValue,
-                items: languages.map((List<String> lang) {
-                  return DropdownMenuItem<String>(
-                    value: lang[1],
-                    child: Text(lang[0]),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedValue = newValue!;
-                  });
-                }),
+              ],
+            ),
             const SizedBox(width: 20),
             TextField(
               controller: _controller,
